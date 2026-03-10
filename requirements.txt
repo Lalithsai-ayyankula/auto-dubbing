@@ -1,0 +1,34 @@
+# Core Framework
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+python-multipart==0.0.9
+aiofiles==23.2.1
+
+# AI / ML
+openai-whisper==20231117
+torch>=2.0.0
+torchaudio>=2.0.0
+torchvision>=0.15.0
+transformers==4.41.2
+sentencepiece==0.2.0
+TTS==0.22.0
+
+# Video / Audio processing
+ffmpeg-python==0.2.0
+opencv-python==4.10.0.84
+numpy==1.26.4
+scipy==1.13.1
+librosa==0.10.2
+soundfile==0.12.1
+moviepy==1.0.3
+
+# Wav2Lip dependencies
+face_alignment==1.3.5
+batch_face==1.4.0
+
+# Utilities
+requests==2.32.3
+tqdm==4.66.4
+Pillow==10.3.0
+pydantic==2.7.4
+python-dotenv==1.0.1

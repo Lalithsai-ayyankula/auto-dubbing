@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoDub — AI Video Dubbing for Indian Languages</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            saffron: { 400: '#FB923C', 500: '#F97316', 600: '#EA580C' },
+            indigo:  { 400: '#818CF8', 500: '#6366F1', 600: '#4F46E5' },
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+
+    .gradient-bg {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+    }
+
+    .glass-card {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .drop-zone {
+      transition: all 0.3s ease;
+      background: rgba(99,102,241,0.05);
+    }
+    .drop-zone.drag-over {
+      background: rgba(99,102,241,0.15);
+      border-color: #818CF8;
+      transform: scale(1.01);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #6366F1, #8B5CF6);
+      transition: all 0.2s;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 25px rgba(99,102,241,0.4); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .progress-bar { transition: width 0.5s ease; }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      70% { transform: scale(1.05); opacity: 0; }
+      100% { transform: scale(1.05); opacity: 0; }
+    }
+    .pulse-ring { animation: pulse-ring 2s ease-out infinite; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { animation: spin 1s linear infinite; }
+
+    @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fade-in 0.4s ease; }
+
+    .step-badge {
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 9999px; font-size: 12px; font-weight: 600;
+    }
+  </style>
+</head>
+
+<body class="gradient-bg min-h-screen text-gray-100">
+
+  <!-- Header -->
+  <header class="border-b border-white/10 px-6 py-4">
+    <div class="max-w-5xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-indigo-500 flex items-center justify-center text-xl">🎙️</div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight">AutoDub</h1>
+          <p class="text-xs text-gray-400">AI Video Dubbing · Konkani & Maithili</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 text-xs text-gray-400">
+        <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>
+        System Online
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-5xl mx-auto px-6 py-12">
+
+    <!-- Hero -->
+    <div class="text-center mb-12">
+      <h2 class="text-4xl font-bold mb-3 bg-gradient-to-r from-indigo-400 via-purple-400 to-saffron-400 bg-clip-text text-transparent">
+        Automatic Dubbing for Educational Videos
+      </h2>
+      <p class="text-gray-400 text-lg max-w-2xl mx-auto">
+        Upload a Hindi educational video. Our AI pipeline will transcribe, translate, and re-voice it into Konkani or Maithili — with lip sync.
+      </p>
+    </div>
+
+    <!-- Pipeline Steps Overview -->
+    <div class="grid grid-cols-5 gap-2 mb-10 text-center">
+      <div v-for="step in steps" class="glass-card rounded-xl p-3">
+        <div class="text-2xl mb-1">🎬</div>
+        <div class="text-[10px] text-gray-400">Extract Audio</div>
+      </div>
+      <template>
+        <div class="glass-card rounded-xl p-3"><div class="text-2xl mb-1">🎤</div><div class="text-[10px] text-gray-400">Whisper STT</div></div>
+        <div class="glass-card rounded-xl p-3"><div class="text-2xl mb-1">🌐</div><div class="text-[10px] text-gray-400">mT5 Translate</div></div>
+        <div class="glass-card rounded-xl p-3"><div class="text-2xl mb-1">🔊</div><div class="text-[10px] text-gray-400">Coqui TTS</div></div>
+        <div class="glass-card rounded-xl p-3"><div class="text-2xl mb-1">👄</div><div class="text-[10px] text-gray-400">Wav2Lip Sync</div></div>
+      </template>
+    </div>
+
+    <div class="grid lg:grid-cols-5 gap-6">
+
+      <!-- Upload Panel -->
+      <div class="lg:col-span-3 space-y-5">
+        <div class="glass-card rounded-2xl p-6">
+
+          <!-- Drop Zone -->
+          <div
+            id="drop-zone"
+            class="drop-zone border-2 border-dashed border-indigo-500/40 rounded-xl p-10 text-center cursor-pointer"
+            onclick="document.getElementById('file-input').click()"
+          >
+            <div id="drop-icon" class="text-5xl mb-3">📹</div>
+            <p class="text-gray-300 font-medium" id="drop-label">Click or drag a Hindi video here</p>
+            <p class="text-gray-500 text-sm mt-1">MP4 · AVI · MOV · MKV · WEBM &nbsp;|&nbsp; Max 500MB</p>
+            <input
+              id="file-input" type="file"
+              accept=".mp4,.avi,.mov,.mkv,.webm" class="hidden"
+              onchange="handleFileSelect(this)"
+            />
+          </div>
+
+          <!-- File Preview -->
+          <div id="file-preview" class="hidden mt-4 p-4 rounded-xl bg-white/5 border border-white/10 fade-in">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">🎞️</span>
+              <div class="flex-1 min-w-0">
+                <p id="file-name" class="font-medium truncate text-sm"></p>
+                <p id="file-size" class="text-gray-400 text-xs"></p>
+              </div>
+              <button onclick="clearFile()" class="text-gray-400 hover:text-red-400 transition text-xl">✕</button>
+            </div>
+          </div>
+
+          <!-- Language Selection -->
+          <div class="mt-5">
+            <label class="block text-sm font-medium text-gray-300 mb-2">Target Language</label>
+            <div class="grid grid-cols-2 gap-3">
+              <label id="lang-konkani" class="lang-option cursor-pointer rounded-xl border border-indigo-500/60 p-4 flex items-center gap-3 transition hover:border-indigo-400 selected-lang">
+                <input type="radio" name="language" value="konkani" class="sr-only" checked onchange="selectLanguage('konkani')" />
+                <span class="text-2xl">🌴</span>
+                <div>
+                  <p class="font-semibold text-sm">Konkani</p>
+                  <p class="text-gray-400 text-xs">Goa · Mangalore · Kerala</p>
+                </div>
+              </label>
+              <label id="lang-maithili" class="lang-option cursor-pointer rounded-xl border border-white/10 p-4 flex items-center gap-3 transition hover:border-indigo-400">
+                <input type="radio" name="language" value="maithili" class="sr-only" onchange="selectLanguage('maithili')" />
+                <span class="text-2xl">🪔</span>
+                <div>
+                  <p class="font-semibold text-sm">Maithili</p>
+                  <p class="text-gray-400 text-xs">Bihar · Jharkhand</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Start Button -->
+          <button
+            id="start-btn"
+            onclick="startDubbing()"
+            class="btn-primary w-full mt-5 py-3.5 rounded-xl font-semibold text-white flex items-center justify-center gap-2"
+          >
+            <span>🚀</span> Start Dubbing
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Status Panel -->
+      <div class="lg:col-span-2 space-y-5">
+
+        <!-- Status Card -->
+        <div class="glass-card rounded-2xl p-6" id="status-card">
+          <h3 class="font-semibold text-gray-300 mb-4 text-sm uppercase tracking-wider">Pipeline Status</h3>
+
+          <!-- Idle State -->
+          <div id="status-idle" class="text-center py-8">
+            <div class="text-5xl mb-3">⏳</div>
+            <p class="text-gray-500 text-sm">Upload a video and click <br><span class="text-indigo-400">Start Dubbing</span> to begin</p>
+          </div>
+
+          <!-- Running State -->
+          <div id="status-running" class="hidden fade-in">
+            <div class="flex items-center gap-3 mb-5">
+              <div class="relative">
+                <div class="w-10 h-10 rounded-full bg-indigo-500/20 pulse-ring absolute inset-0"></div>
+                <div class="w-10 h-10 rounded-full border-2 border-indigo-400 border-t-transparent spinner"></div>
+              </div>
+              <div>
+                <p class="font-medium text-sm" id="step-label">Initializing...</p>
+                <p class="text-gray-500 text-xs" id="progress-pct">0%</p>
+              </div>
+            </div>
+            <div class="h-2 bg-white/10 rounded-full overflow-hidden">
+              <div id="progress-bar" class="progress-bar h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full" style="width:0%"></div>
+            </div>
+            <p class="text-gray-500 text-xs mt-3 text-center">This may take several minutes for longer videos</p>
+          </div>
+
+          <!-- Completed State -->
+          <div id="status-done" class="hidden fade-in text-center py-4">
+            <div class="text-5xl mb-3">✅</div>
+            <p class="font-semibold text-green-400 mb-1">Dubbing Complete!</p>
+            <p class="text-gray-400 text-sm mb-5">Your video is ready to download</p>
+            <a
+              id="download-btn"
+              href="#"
+              download
+              class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-green-500 hover:bg-green-400 text-white font-semibold transition text-sm"
+            >
+              ⬇️ Download Dubbed Video
+            </a>
+          </div>
+
+          <!-- Failed State -->
+          <div id="status-error" class="hidden fade-in text-center py-4">
+            <div class="text-5xl mb-3">❌</div>
+            <p class="font-semibold text-red-400 mb-2">Pipeline Failed</p>
+            <p id="error-msg" class="text-gray-400 text-xs text-left bg-red-500/10 border border-red-500/20 rounded-lg p-3 font-mono break-all"></p>
+            <button onclick="resetUI()" class="mt-4 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm transition">
+              Try Again
+            </button>
+          </div>
+        </div>
+
+        <!-- Info Card -->
+        <div class="glass-card rounded-2xl p-5">
+          <h4 class="font-semibold text-gray-300 text-xs uppercase tracking-wider mb-3">AI Models Used</h4>
+          <div class="space-y-2">
+            <div class="flex items-center gap-2 text-xs text-gray-400">
+              <span class="step-badge bg-blue-500/20 text-blue-400">1</span> ffmpeg — Audio extraction
+            </div>
+            <div class="flex items-center gap-2 text-xs text-gray-400">
+              <span class="step-badge bg-purple-500/20 text-purple-400">2</span> OpenAI Whisper Small — STT
+            </div>
+            <div class="flex items-center gap-2 text-xs text-gray-400">
+              <span class="step-badge bg-indigo-500/20 text-indigo-400">3</span> Google mT5-base — Translation
+            </div>
+            <div class="flex items-center gap-2 text-xs text-gray-400">
+              <span class="step-badge bg-orange-500/20 text-orange-400">4</span> Coqui XTTS-v2 — Voice Clone TTS
+            </div>
+            <div class="flex items-center gap-2 text-xs text-gray-400">
+              <span class="step-badge bg-green-500/20 text-green-400">5</span> Wav2Lip GAN — Lip Sync
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <footer class="text-center text-gray-600 text-xs py-8">
+    AutoDub · Powered by Whisper, mT5, Coqui TTS & Wav2Lip · Built with FastAPI
+  </footer>
+
+  <script>
+    let selectedFile = null;
+    let pollingInterval = null;
+    let currentJobId = null;
+
+    // Drag-and-drop
+    const dropZone = document.getElementById('drop-zone');
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file) setFile(file);
+    });
+
+    function handleFileSelect(input) {
+      if (input.files[0]) setFile(input.files[0]);
+    }
+
+    function setFile(file) {
+      selectedFile = file;
+      document.getElementById('file-name').textContent = file.name;
+      document.getElementById('file-size').textContent = formatSize(file.size);
+      document.getElementById('drop-zone').classList.add('hidden');
+      document.getElementById('file-preview').classList.remove('hidden');
+    }
+
+    function clearFile() {
+      selectedFile = null;
+      document.getElementById('file-input').value = '';
+      document.getElementById('drop-zone').classList.remove('hidden');
+      document.getElementById('file-preview').classList.add('hidden');
+    }
+
+    function formatSize(bytes) {
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    function selectLanguage(lang) {
+      document.getElementById('lang-konkani').classList.toggle('border-indigo-500/60', lang === 'konkani');
+      document.getElementById('lang-konkani').classList.toggle('border-white/10', lang !== 'konkani');
+      document.getElementById('lang-maithili').classList.toggle('border-indigo-500/60', lang === 'maithili');
+      document.getElementById('lang-maithili').classList.toggle('border-white/10', lang !== 'maithili');
+    }
+
+    function getSelectedLanguage() {
+      return document.querySelector('input[name="language"]:checked').value;
+    }
+
+    async function startDubbing() {
+      if (!selectedFile) { alert('Please select a video file first.'); return; }
+
+      const language = getSelectedLanguage();
+      const btn = document.getElementById('start-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Uploading...';
+
+      const formData = new FormData();
+      formData.append('video', selectedFile);
+      formData.append('language', language);
+
+      try {
+        const res = await fetch('/api/dub', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.detail || 'Upload failed');
+
+        currentJobId = data.job_id;
+        showRunningState('Queued — starting pipeline...');
+        startPolling(currentJobId);
+
+      } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = '<span>🚀</span> Start Dubbing';
+        showErrorState(err.message);
+      }
+    }
+
+    function startPolling(jobId) {
+      pollingInterval = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/status/${jobId}`);
+          const job = await res.json();
+          updateProgress(job);
+        } catch (e) {
+          console.error('Polling error:', e);
+        }
+      }, 1500);
+    }
+
+    function updateProgress(job) {
+      const { status, progress, step, error } = job;
+
+      if (status === 'running' || status === 'queued') {
+        showRunningState(step, progress);
+      } else if (status === 'completed') {
+        clearInterval(pollingInterval);
+        showRunningState(step, 100);
+        setTimeout(() => fetchAndShowDownload(job.job_id), 500);
+      } else if (status === 'failed') {
+        clearInterval(pollingInterval);
+        showErrorState(error || 'Unknown error');
+      }
+    }
+
+    async function fetchAndShowDownload(jobId) {
+      try {
+        const res = await fetch(`/api/download/${jobId}`);
+        const data = await res.json();
+        document.getElementById('download-btn').href = data.download_url;
+        document.getElementById('download-btn').setAttribute('download', data.filename);
+        showDoneState();
+      } catch (e) {
+        showErrorState('Failed to get download URL: ' + e.message);
+      }
+    }
+
+    function showRunningState(step, progress = 0) {
+      hide(['status-idle', 'status-done', 'status-error']);
+      document.getElementById('status-running').classList.remove('hidden');
+      document.getElementById('step-label').textContent = step;
+      document.getElementById('progress-pct').textContent = progress + '%';
+      document.getElementById('progress-bar').style.width = progress + '%';
+    }
+
+    function showDoneState() {
+      hide(['status-idle', 'status-running', 'status-error']);
+      document.getElementById('status-done').classList.remove('hidden');
+      document.getElementById('start-btn').disabled = false;
+      document.getElementById('start-btn').innerHTML = '<span>🚀</span> Start Dubbing';
+    }
+
+    function showErrorState(msg) {
+      hide(['status-idle', 'status-running', 'status-done']);
+      document.getElementById('status-error').classList.remove('hidden');
+      document.getElementById('error-msg').textContent = msg;
+      document.getElementById('start-btn').disabled = false;
+      document.getElementById('start-btn').innerHTML = '<span>🚀</span> Start Dubbing';
+    }
+
+    function resetUI() {
+      clearInterval(pollingInterval);
+      hide(['status-running', 'status-done', 'status-error']);
+      document.getElementById('status-idle').classList.remove('hidden');
+      document.getElementById('start-btn').disabled = false;
+      document.getElementById('start-btn').innerHTML = '<span>🚀</span> Start Dubbing';
+    }
+
+    function hide(ids) { ids.forEach(id => document.getElementById(id).classList.add('hidden')); }
+  </script>
+
+</body>
+</html>
